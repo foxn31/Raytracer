@@ -1,12 +1,15 @@
-# Raytracer.py
-# Written by Nick Fox using https://mitchellkember.com/blog/post/ray-tracer/
-# as a reference
+/** Raytracer.cpp
+ *  Written by Nick Fox using
+ *  https://mitchellkember.com/blog/post/ray-tracer/
+ *  as a reference.
+ *  Adapted from Raytracer.py
+ */
 
 import os
 from PIL import Image
 
-class Vector():
-    def __init__(self, x, y, z):
+// Vector structure and related functions
+struct vector
         self.x = x
         self.y = y
         self.z = z
@@ -407,8 +410,11 @@ def render_image(objects, light, camera):
     return image
 
 def main():
-    #ray = Ray(Vector(0,0,0), Vector(1,0,0))
-
+    ray = Ray(Vector(0,0,0), Vector(1,0,0))
+    #print(ray)
+    #draw(10,10)
+    #print(quadraticFormula(1,0,-1))
+    #print(Vector(1,0,1).dot(Vector(1, 1, 0)))
     material1 = Vector(1.0, 0.5, 0.5)
     material2 = Vector(1.0, 0.5, 1.0)
     material3 = Vector(0.8, 0.5, 0.0)
@@ -423,6 +429,10 @@ def main():
     sphere3 = Sphere(Vector(2.9, -.3, .3), .05, material4)
     #sphere4 = Sphere(Vector(4.3, 1.3, 1.3), 0.1, material)
     #spheres = []
+    #for x in range(36):
+    #    sphere_pos = Vector(2.8, -0.7 + (x%6)*0.25, 0.6 - (x//6)*0.25)
+    #    spheres.append(Sphere(sphere_pos, 0.1, material))
+    #print(ray.dir*intersection(ray, sphere) + ray.pos)
 
     #objects = spheres + [plane]
     objects = [sphere, sphere2, sphere3, plane, plane2, plane3]
@@ -432,9 +442,11 @@ def main():
 
     sequence = render_image(objects, light, camera)
     sequence = post_processing(sequence, camera.width, camera.height)
-    # sequence = anti_aliasing(sequence, camera.width, camera.height)
+    sequence = anti_aliasing(sequence, camera.width, camera.height)
 
-    img = Image.new("RGB", (camera.width, camera.height), (0,0,0))
+    #draw(sequence, camera.width, camera.height)
+    #draw_to_file(sequence, camera.width, camera.height)
+    img = Image.new("RGB", (camera.width*2, camera.height*2), (0,0,0))
     img.putdata(sequence)
     img.save("image.png", "PNG")
 
