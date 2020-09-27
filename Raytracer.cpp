@@ -5,12 +5,16 @@
  *  Adapted from Raytracer.py
  */
 #include <math.h>
+#include <cmath>
 #include <string>
 using namespace std;
 //import os
 //from PIL import Image
 
-// Vector structure and related functions
+float* quadraticFormula(float a, float b, float c);
+
+// Vector class and related functions
+// Vectors are used to represent many things, including points in 3D space
 class Vector {
 private:
   float x, y, z;
@@ -26,6 +30,10 @@ public:
     y = b;
     z = c;
   }
+
+  float getX() { return x; }
+  float getY() { return y; }
+  float getZ() { return z; }
 
   // returns the mathematical magnitude of the vector
   float magnitude() {
@@ -43,7 +51,7 @@ public:
   // operator overloads and other useful functions:
   // add, sub, scalar multiply, dot, cross, direction, and distance
   // add two Vectors
-  Vector operator+(const Vector& v) {
+  Vector operator+(Vector v) {
     Vector result;
     result.x = this->x + v.x;
     result.y = this->y + v.y;
@@ -51,7 +59,7 @@ public:
     return result;
   }
   // subtract two Vectors
-  Vector operator-(const Vector& v) {
+  Vector operator-(Vector v) {
     Vector result;
     result.x = this->x - v.x;
     result.y = this->y - v.y;
@@ -103,111 +111,198 @@ public:
   }
   // string representation tells x, y, and z components
   string toString() {
-    string representation = "(" + to_string(this->x) + "," + to_string(this->y);
-    representation += "," + to_string(this->z) + ")";
+    string representation = "(" + to_string(x) + "," + to_string(y);
+    representation += "," + to_string(z) + ")";
     return representation;
   }
 };
 
+// additional operator overloads for multiplying with scalars
+Vector operator*(int n, Vector v) {
+  return Vector(v.getX() * n, v.getY() * n, v.getZ() * n);
+}
+Vector operator*(float n, Vector v) {
+  return Vector(v.getX() * n, v.getY() * n, v.getZ() * n);
+}
 
-class Ray():
-    def __init__(self, pos, dir):
-        self.pos = pos
-        self.dir = dir
+// Rays consist of an origin (pos) and a direction (dir),
+// both of which are Vectors
+class Ray {
+private:
+  Vector pos, dir;
+public:
+  Ray (Vector position, Vector direction) {
+    pos = position;
+    dir = direction;
+  }
 
-    // string representation tells position, direction, and magnitude
-    def __str__(self):
-        string = "p: " + str(self.pos) + "\n" + "d: " + str(self.dir)
-        return string
+  Vector getPos() {
+    return pos;
+  }
 
-class Sphere():
-    def __init__(self, center, radius, material):
-        self.center = center
-        self.radius = radius
-        self.material = material
+  Vector getDir() {
+    return dir;
+  }
 
-    // determines the magnitude of the ray at which it intersects the Sphere
-    // formula from mitchellkember, returns 0, 1, or 2 solutions
-    def intersection(self, ray):
-        // to solve, first calculate the terms of the quadratic equation to be solved
-        a = 1
-        b = (ray.dir*2).dot(ray.pos - self.center)
-        c = (ray.pos - self.center).magnitude()*(ray.pos - self.center).magnitude()
-        c -= self.radius*self.radius
-        // perform quadratic formula on terms a, b, and c
-        solutions = quadraticFormula(a, b, c)
-        // since ray only points in one direction, remove any negative solutions
-        validsolutions = []
-        for solution in solutions:
-            if solution >= 0:
-                validsolutions.append(solution)
-        // no intersection between ray and object
-        if len(validsolutions) == 0:
-            return None
-        // return all points of intersection. the renderer will decide which one to use
-        return validsolutions
-
-    // given a point on the surface, return the normal vector
-    // for a sphere, the point normal points away from the center
-    def get_normal(self, point):
-        return Vector.direction(point, self.center)
-
-class Plane():
-    def __init__(self, normal, scalar, material):
-        self.normal = normal
-        self.scalar = scalar
-        self.material = material
-
-    def intersection(self, ray):
-        num = self.scalar - ray.pos.dot(self.normal)
-        denom = ray.dir.dot(self.normal)
-        // don't divide by zero (ray parallel to plane)
-        // and don't return a negative value
-        if denom == 0 or num / denom < 0:
-            return None
-        else:
-            return [num / denom]
-
-    // given a point on the surface, return the normal vector
-    // for a plane, the normal is always the same
-    def get_normal(self, point):
-        return self.normal
+  // string representation tells position, direction, and magnitude
+  string toString() {
+    string rep = "p: " + pos.toString() + "\n" + "d: " + dir.toString();
+    return rep;
+  }
+};
 
 // materials tell the renderer how to display an object
 // albedo is an RGB vector telling the reflectivity for each color
-class Material():
-    def __init__(self, albedo):
-        self.albedo = albedo
+class Material {
+private:
+  Vector albedo;
+public:
+  Material() {
+    Vector a;
+    albedo = a;
+  }
+  Material(Vector a) {
+    albedo = a;
+  }
+};
 
-class Camera():
-    def __init__(self, pos, dir, focal_length, width, height, pixel_width = 0.001):
-        self.pos = pos
-        self.dir = dir
-        self.focal_length = focal_length
-        self.width = width
-        self.height = height
-        self.pixel_width = pixel_width
-    up = Vector(0, 0, 1)
+class Sphere {
+private:
+  Vector center;
+  float radius;
+  Material material;
+public:
+  Sphere(Vector c, float r, Material m) {
+    center = c;
+    radius = r;
+    material = m;
+  }
 
-class Light():
-    def __init__(self, pos, power):
-        self.pos = pos
-        self.power = power
+  // determines the magnitude of the ray at which it intersects the Sphere
+  // formula from mitchellkember, returns 0, 1, or 2 solutions
+  float* intersection(Ray ray) {
+    // to solve, first calculate the terms of the quadratic equation to be solved
+    float a = 1;
+    float b = (2*ray.getDir()).dot(ray.getPos() - center);
+    float c = (ray.getPos() - center).magnitude()*(ray.getPos() - center).magnitude();
+    c -= radius*radius;
+    // perform quadratic formula on terms a, b, and c
+    float* solutions = quadraticFormula(a, b, c);
+    // since ray only points in one direction, remove any negative solutions
+    // use NaN to designate nonsolutions or invalid solutions
+    float validsolutions [2] = {nanf(""), nanf("")};
+    for (int i = 0; i < 2; i++) {
+      // if the solution is a number and is greater than 0, it is valid
+      if (!isnan(solutions[i]) && solutions[i] >= 0)
+        validsolutions[i] = solutions[i];
+    }
+    // return all points of intersection. the renderer will decide which one to use
+    return validsolutions;
+  }
 
-// solves a quadratic equation, returning 0, 1, or 2 solutions in a list
-def quadraticFormula(a, b, c):
-    rootTerm = b*b - 4*a*c
-    // check for complex roots
-    if rootTerm < 0:
-        return []
-    // solve for the two roots
-    x1 = (-b + pow(rootTerm, 0.5)) / 2*a
-    x2 = (-b - pow(rootTerm, 0.5)) / 2*a
-    // check if the two roots are the same, in which case return just one
-    if x1 == x2:
-        return [x1]
-    // return the roots as a tuple
-    return [x1, x2]
+  // given a point on the surface, return the normal vector
+  // for a sphere, the point normal points away from the center
+  Vector get_normal(Vector point) {
+    return Vector::direction(point, center);
+  }
+};
+
+class Plane {
+private:
+  Vector normal;
+  float scalar;
+  Material material;
+
+public:
+  Plane(Vector n, float s, Material m) {
+    normal = n;
+    scalar = s;
+    material = m;
+  }
+
+  float intersection(Ray ray) {
+    float num = scalar - ray.getPos().dot(normal);
+    float denom = ray.getDir().dot(normal);
+    // don't divide by zero (ray parallel to plane)
+    // and don't return a negative value
+    if (denom == 0 || num / denom < 0)
+      return nanf("");
+    else
+      return num / denom;
+  }
+
+  // given a point on the surface, return the normal vector
+  // for a plane, the normal is always the same
+  Vector get_normal(Vector point) {
+    return normal;
+  }
+};
+
+class Camera {
+private:
+  Vector pos, dir;
+  float focal_length;
+  int width, height;
+  float pixel_width = 0.001;
+
+public:
+  Camera(Vector p, Vector d, float f, int w, int h, float pw) {
+    pos = p;
+    dir = d;
+    focal_length = f;
+    width = w;
+    height = h;
+    pixel_width = pw;
+  }
+
+  Camera(Vector p, Vector d, float f, int w, int h) {
+    pos = p;
+    dir = d;
+    focal_length = f;
+    width = w;
+    height = h;
+  }
+
+  const static Vector up;
+};
+const Vector Camera::up = Vector(0, 0, 1);
+
+class Light {
+private:
+  Vector pos;
+  float power;
+public:
+  Light(Vector position, float pwr) {
+    pos = position;
+    power = pwr;
+  }
+};
+
+// solves a quadratic equation, returning 0, 1, or 2 solutions in an array
+// for fewer than 2 solutions, NaN values are used
+float* quadraticFormula(float a, float b, float c) {
+  float* solutions = new float[2];
+  float rootTerm = b*b - 4*a*c;
+  // check for complex roots
+  if (rootTerm < 0) {
+      solutions[0] = nanf("");
+      solutions[1] = nanf("");
+      return solutions;
+  }
+  // solve for the two roots
+  float x1 = (-b + pow(rootTerm, 0.5)) / 2*a;
+  float x2 = (-b - pow(rootTerm, 0.5)) / 2*a;
+  // check if the two roots are the same, in which case return just one
+  if (x1 == x2) {
+    solutions[0] = x1;
+    solutions[1] = nanf("");
+    return solutions;
+  }
+  // return the roots
+  solutions[0] = x1;
+  solutions[1] = x2;
+  return solutions;
+}
 
 // perform gamma correciton using sRGB color space (see mitchellkember)
 def sRGB_gamma_correction(luminance):
